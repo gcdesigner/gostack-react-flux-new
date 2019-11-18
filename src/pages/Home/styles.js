@@ -43,7 +43,7 @@ export const Product = styled.li`
   > strong {
     font-size: 21px;
     color: #000;
-    margin: 5px 0;
+    margin: 8px 0 10px;
   }
 `;
 

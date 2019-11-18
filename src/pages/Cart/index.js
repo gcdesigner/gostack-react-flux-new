@@ -1,6 +1,5 @@
 import React from 'react';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   MdAddCircle,
   MdRemoveCircle,
@@ -13,13 +12,32 @@ import { colors } from '../../styles/global';
 
 import { Container, CartTable, CartFooter } from './styles';
 
-function Cart({ cart, removeFromCart, updateAmount }) {
+export default function Cart() {
+  const cartSize = useSelector(state => state.cart.length);
+
+  const total = useSelector(state =>
+    formatPrice(
+      state.cart.reduce((sumTotal, product) => {
+        return sumTotal + product.price * product.amount;
+      }, 0)
+    )
+  );
+
+  const cart = useSelector(state =>
+    state.cart.map(product => ({
+      ...product,
+      subTotal: formatPrice(product.price * product.amount),
+    }))
+  );
+
+  const dispatch = useDispatch();
+
   function increment(product) {
-    updateAmount(product.id, product.amount + 1);
+    dispatch(CartActions.updateAmountRequest(product.id, product.amount + 1));
   }
 
   function decrement(product) {
-    updateAmount(product.id, product.amount - 1);
+    dispatch(CartActions.updateAmountRequest(product.id, product.amount - 1));
   }
 
   return (
@@ -35,58 +53,59 @@ function Cart({ cart, removeFromCart, updateAmount }) {
           </tr>
         </thead>
         <tbody>
-          {cart.map(product => (
-            <tr key={product.id}>
-              <td align="center" width="150">
-                <img src={product.image} alt={product.title} />
-              </td>
-              <td>
-                <span>{product.title}</span>
-                <strong>{product.priceFormatted}</strong>
-              </td>
-              <td>
-                <div>
-                  <button type="button" onClick={() => decrement(product)}>
-                    <MdRemoveCircle size={20} color={colors.primary} />
+          {cartSize ? (
+            cart.map(product => (
+              <tr key={product.id}>
+                <td align="center" width="150">
+                  <img src={product.image} alt={product.title} />
+                </td>
+                <td>
+                  <span>{product.title}</span>
+                  <strong>{product.priceFormatted}</strong>
+                </td>
+                <td>
+                  <div>
+                    <button type="button" onClick={() => decrement(product)}>
+                      <MdRemoveCircle size={20} color={colors.primary} />
+                    </button>
+                    <input
+                      type="text"
+                      value={product.amount}
+                      readOnly
+                      disabled
+                    />
+                    <button type="button" onClick={() => increment(product)}>
+                      <MdAddCircle size={20} color={colors.primary} />
+                    </button>
+                  </div>
+                </td>
+                <td>{product.subTotal}</td>
+                <td align="center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      dispatch(CartActions.removeFromCart(product.id))
+                    }
+                  >
+                    <MdRemoveShoppingCart size={20} color={colors.primary} />
                   </button>
-                  <input type="text" value={product.amount} readOnly disabled />
-                  <button type="button" onClick={() => increment(product)}>
-                    <MdAddCircle size={20} color={colors.primary} />
-                  </button>
-                </div>
-              </td>
-              <td>{product.subTotal}</td>
-              <td align="center">
-                <button
-                  type="button"
-                  onClick={() => removeFromCart(product.id)}
-                >
-                  <MdRemoveShoppingCart size={20} color={colors.primary} />
-                </button>
-              </td>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={4}>Nenhum produto adicionado ao carrinho!</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </CartTable>
       <CartFooter>
         <button type="button">FINALIZAR PEDIDO</button>
         <div>
           <span>TOTAL</span>
-          <strong>R$ 150,00</strong>
+          <strong>{total}</strong>
         </div>
       </CartFooter>
     </Container>
   );
 }
-
-const mapStateToProps = state => ({
-  cart: state.cart.map(product => ({
-    ...product,
-    subTotal: formatPrice(product.price * product.amount),
-  })),
-});
-
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(CartActions, dispatch);
-
-export default connect(mapStateToProps, mapDispatchToProps)(Cart);
